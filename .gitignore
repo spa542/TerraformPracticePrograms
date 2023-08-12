@@ -33,7 +33,7 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# Ignore all .terraform* files
+# Ignore all .terraform lock files
 .terraform*
 
 # Ignore vscode stuff

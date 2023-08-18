@@ -1,4 +1,3 @@
-# ----------Section 4---------
 terraform {
   required_providers {
     aws = {
@@ -22,4 +21,9 @@ terraform {
 
 provider "aws" {
   region = "us-east-1"
+  default_tags {
+    Environment = terraform.workspace
+    Owner       = "Ryan Rosiak"
+    Provisioned = "Terraform"
+  }
 }

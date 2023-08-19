@@ -22,8 +22,10 @@ terraform {
 provider "aws" {
   region = "us-east-1"
   default_tags {
-    Environment = terraform.workspace
-    Owner       = "Ryan Rosiak"
-    Provisioned = "Terraform"
+    tags = {
+      Environment = terraform.workspace
+      Owner       = "Ryan Rosiak"
+      Provisioned = "Terraform"
+    }
   }
 }

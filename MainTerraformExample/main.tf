@@ -320,3 +320,106 @@ resource "aws_security_group" "vpc-ping" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+// Create a module from a local source 
+// All code within the 
+module "server" {
+  source          = "./modules/server"
+  ami             = data.aws_ami.ubuntu.id
+  size            = "t2.micro"
+  subnet_id       = aws_subnet.public_subnets["public_subnet_3"].id
+  security_groups = [aws_security_group.ingress-ssh.id, aws_security_group.vpc-web.id, aws_security_group.vpc-ping.id]
+}
+
+// Display outputs for server defined above
+output "public_dns" {
+  value = module.server.public_dns
+}
+
+output "size" {
+  value = module.server.size
+}
+
+// Each argument in the module is a variable in the module source that is expecting a value
+module "server_subnet_1" {
+  source          = "./modules/web_server"
+  ami             = data.aws_ami.ubuntu.id
+  key_name        = aws_key_pair.generated.key_name
+  user            = "ubuntu"
+  private_key     = tls_private_key.generated.private_key_pem
+  subnet_id       = aws_subnet.public_subnets["public_subnet_1"].id
+  security_groups = [aws_security_group.ingress-ssh.id, aws_security_group.vpc-web.id, aws_security_group.vpc-ping.id]
+}
+
+// Ouput of module above
+output "public_ip_server_subnet_1" {
+  value = module.server_subnet_1.public_ip
+}
+
+// Sourced from the Terraform Module registry
+module "autoscaling_pmr" {
+  source  = "terraform-aws-modules/autoscaling/aws"
+  version = "6.10.0"
+  # Autoscaling group
+  name                = "myasg"
+  vpc_zone_identifier = [aws_subnet.private_subnets["private_subnet_1"].id, aws_subnet.private_subnets["private_subnet_2"].id, aws_subnet.private_subnets["private_subnet_3"].id]
+  min_size            = 0
+  max_size            = 1
+  desired_capacity    = 1
+  # Launch template
+  image_id      = data.aws_ami.ubuntu.id
+  instance_type = "t3.micro"
+  tags = {
+    "Name" = "Web EC2 Server 2"
+  }
+}
+
+// Sourced from GitHub
+module "autoscaling_gh" {
+  source = "github.com/terraform-aws-modules/terraform-aws-autoscaling?ref=v6.10.0"
+  # Autoscaling group
+  name                = "myasg"
+  vpc_zone_identifier = [aws_subnet.private_subnets["private_subnet_1"].id, aws_subnet.private_subnets["private_subnet_2"].id, aws_subnet.private_subnets["private_subnet_3"].id]
+  min_size            = 0
+  max_size            = 1
+  desired_capacity    = 1
+  # Launch template
+  image_id      = data.aws_ami.ubuntu.id
+  instance_type = "t3.micro"
+  tags = {
+    "Name" = "Web EC2 Server 2"
+  }
+}
+
+// Pulled from a child module, only can be pulled because the module explicitly exposed it 
+output "asg_group_size" {
+  value = module.autoscaling_gh.autoscaling_group_max_size
+
+}
+
+// Sourcing another module from TMR
+module "s3-bucket" {
+  source  = "terraform-aws-modules/s3-bucket/aws"
+  version = "3.14.1"
+}
+
+output "s3_bucket_name" {
+  value = module.s3-bucket.s3_bucket_bucket_domain_name
+}
+
+module "vpc" {
+  source             = "terraform-aws-modules/vpc/aws"
+  version            = ">3.0.0"
+  name               = "my-vpc-terraform"
+  cidr               = "10.0.0.0/16"
+  azs                = ["us-east-1a", "us-east-1b", "us-east-1c"]
+  private_subnets    = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets     = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+  enable_nat_gateway = true
+  enable_vpn_gateway = true
+  tags = {
+    Name        = "VPC from Module"
+    Terraform   = "true"
+    Environment = "dev"
+  }
+}

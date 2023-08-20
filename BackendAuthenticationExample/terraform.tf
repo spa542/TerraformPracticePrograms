@@ -1,8 +1,18 @@
 terraform {
-  // Not needed as this is the default, however, it does not hurt to have
-  backend "local" {
-    path = "terraform.tfstate"
+  // Using S3 remote backend
+  backend "s3" {
+    bucket = "my-terraform-state-rcr-sample"
+    key = "sample/aws_infra"
+    region = "us-east-1"
   }
+  // Cloud option setup in Terraform cloud
+  # cloud {
+  #   organization = "PrivateWorkspace"
+
+  #   workspaces {
+  #     name = "FirstCloudWorkspaceTest"
+  #   }
+  # }
   // For managing various providers/plugins and their version information
   required_providers {
     aws = {

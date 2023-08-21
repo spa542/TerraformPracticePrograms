@@ -1,0 +1,2 @@
+bucket = "bucket"
+region = "region"

@@ -9,11 +9,34 @@ data "aws_availability_zones" "available" {}
 data "aws_region" "current" {}
 
 # Local Variables Example
+# Can be used to define values that will be repeated over and over again
+# **Can define string literals, expressions, and use other interpolated locals
 locals {
   team        = "api_mgmt_dev"
   application = "corp_api"
   server_name = "ec2-${var.environment}-api-${var.variables_sub_az}"
 }
+
+# You can put all locals in one block or separate them into multiple blocks for various purposes
+locals {
+  service_name = "Automation"
+  app_team     = "Cloud Team"
+  createdby    = "terraform"
+}
+
+// Can assign our "local" locals and then assign them to "standard" sets of local variables
+locals {
+  // Group into common tags so you dont have to interpolate each individual variable within your code, add them all at once with one reference
+  common_tags = {
+    Name      = local.server_name
+    Owner     = local.team
+    App       = local.application
+    Service   = local.service_name
+    AppTeam   = local.app_team
+    CreatedBy = local.createdby
+  }
+}
+
 
 # Define the VPC
 resource "aws_vpc" "vpc" {
@@ -158,11 +181,16 @@ resource "aws_instance" "web_server" {
     ]
 
   }
-  tags = {
-    Name  = "Ubuntu EC2 Server"
-    Owner = local.team
-    App   = local.application
-  }
+  // Instead of manual instantiation, set a whole dictionary of common tags
+  tags = local.common_tags
+  # {
+  #   Name           = "Ubuntu EC2 Server"
+  #   Owner          = local.team
+  #   App            = local.application
+  #   "service_name" = "Automation" // Can use quotes for key (if a space is needed) otherwise, can keep normal
+  #   app_team       = "Cloud Team"
+  #   createdby      = "terraform"
+  # }
   lifecycle {
     ignore_changes = [security_groups]
   }

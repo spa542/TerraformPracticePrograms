@@ -29,7 +29,6 @@ variable "public_subnets" {
   }
 }
 
-# -----Section 4-----
 variable "variables_sub_cidr" {
   description = "CIDR Block for the Variables Subnet"
   type        = string

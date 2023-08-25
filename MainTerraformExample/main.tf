@@ -8,6 +8,31 @@ Ryan Rosiak
 data "aws_availability_zones" "available" {}
 data "aws_region" "current" {}
 
+# Query S3 bucket using data block (existing data)
+data "aws_s3_bucket" "data_bucket" {
+  bucket = "my-data-lookup-bucket-ry-rosi"
+}
+
+# Resource created and querying data from our bucket data block
+resource "aws_iam_policy" "policy" {
+  name        = "data_bucket_policy"
+  description = "Allow access to my bucket"
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "s3:Get*",
+          "s3:List*"
+        ],
+        "Resource" : "${data.aws_s3_bucket.data_bucket.arn}"
+      }
+    ]
+  })
+  // Get exported arn key of bucket in above line
+}
+
 # Local Variables Example
 # Can be used to define values that will be repeated over and over again
 # **Can define string literals, expressions, and use other interpolated locals
@@ -450,4 +475,17 @@ module "vpc" {
     Terraform   = "true"
     Environment = "dev"
   }
+}
+
+// Created from list and map in variables.tf
+resource "aws_subnet" "list_subnet" {
+  // Loop through every key in the map
+  for_each = var.env
+  vpc_id   = aws_vpc.vpc.id
+  // From mapped value
+  // Need to use each.value as our "index" of each iteration
+  cidr_block = each.value.ip // Grab value from another variable
+  // Must index here
+  //availability_zone = var.us-east-1-azs[0]
+  availability_zone = each.value.az
 }

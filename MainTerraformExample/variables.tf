@@ -52,3 +52,40 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+// List example
+variable "us-east-1-azs" {
+  // dont necessarily have to include the type but good to have for readability
+  type = list(string)
+  default = [
+    "us-east-1a",
+    "us-east-1b",
+    "us-east-1c",
+    "us-east-1d",
+    "us-east-1e"
+  ]
+}
+
+// Map example
+variable "ip" {
+  type = map(string)
+  default = {
+    prod = "10.0.150.0/24"
+    dev  = "10.0.250.0/24"
+  }
+}
+
+// Much easier to read then variable above
+variable "env" {
+  type = map(any)
+  default = {
+    prod = {
+      ip = "10.0.150.0/24"
+      az = "us-east-1a"
+    }
+    dev = {
+      ip = "10.0.250.0/24"
+      az = "us-east-1e"
+    }
+  }
+}

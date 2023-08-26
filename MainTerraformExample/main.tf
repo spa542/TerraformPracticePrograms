@@ -53,13 +53,19 @@ locals {
 locals {
   // Group into common tags so you dont have to interpolate each individual variable within your code, add them all at once with one reference
   common_tags = {
-    Name      = local.server_name
-    Owner     = local.team
-    App       = local.application
-    Service   = local.service_name
-    AppTeam   = local.app_team
-    CreatedBy = local.createdby
+    Name      = lower(local.server_name)
+    Owner     = lower(local.team)
+    App       = lower(local.application)
+    Service   = lower(local.service_name)
+    AppTeam   = lower(local.app_team)
+    CreatedBy = lower(local.createdby)
   }
+}
+
+// Using some in-built Terraform functions
+locals {
+  maximum = max(var.num_1, var.num_2, var.num_3)
+  minimum = min(var.num_1, var.num_2, var.num_3)
 }
 
 
@@ -67,9 +73,9 @@ locals {
 resource "aws_vpc" "vpc" {
   cidr_block = var.vpc_cidr
   tags = {
-    Name        = var.vpc_name
-    Environment = "demo_environment"
-    Terraform   = "true"
+    Name        = upper(var.vpc_name)
+    Environment = upper(var.environment)
+    Terraform   = upper("true")
     Region      = data.aws_region.current.name
   }
 }
@@ -78,7 +84,7 @@ resource "aws_vpc" "vpc" {
 resource "aws_subnet" "private_subnets" {
   for_each          = var.private_subnets
   vpc_id            = aws_vpc.vpc.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, 8, each.value)
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, each.value) // Chop our base CIDR into multiple subnets
   availability_zone = tolist(data.aws_availability_zones.available.names)[each.value]
   tags = {
     Name      = each.key
@@ -90,7 +96,7 @@ resource "aws_subnet" "private_subnets" {
 resource "aws_subnet" "public_subnets" {
   for_each                = var.public_subnets
   vpc_id                  = aws_vpc.vpc.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, 8, each.value + 100)
+  cidr_block              = cidrsubnet(var.vpc_cidr, 8, each.value + 100) // 10.0.<each.value>.0/<bits>
   availability_zone       = tolist(data.aws_availability_zones.available.names)[each.value]
   map_public_ip_on_launch = true
   tags = {
@@ -401,7 +407,7 @@ module "server_subnet_1" {
   user            = "ubuntu"
   private_key     = tls_private_key.generated.private_key_pem
   subnet_id       = aws_subnet.public_subnets["public_subnet_1"].id
-  security_groups = [aws_security_group.ingress-ssh.id, aws_security_group.vpc-web.id, aws_security_group.vpc-ping.id]
+  security_groups = [aws_security_group.ingress-ssh.id, aws_security_group.vpc-web.id, aws_security_group.vpc-ping.id, aws_security_group.main.id]
 }
 
 // Ouput of module above
@@ -488,4 +494,65 @@ resource "aws_subnet" "list_subnet" {
   // Must index here
   //availability_zone = var.us-east-1-azs[0]
   availability_zone = each.value.az
+}
+
+// Using dynamic blocks
+// Do it with variable instead of locals
+// Only use the dynamic blocks for large amounts of nested configurations or when you need to hide
+// high level abstract code
+# locals {
+#   ingress_rules = [{
+#     port        = 443
+#     description = "Port 443"
+#     },
+#     {
+#       port        = 80
+#       description = "Port 80"
+#     }
+#   ]
+# }
+
+resource "aws_security_group" "main" {
+  // Due to a dependency, the security group will need to be destroyed before it can be recreated because
+  // the server is using the security group and it will break the dependency graph
+  // What we need to do is use a lifecycle directive
+  // See lifecycle block and directive outlined below
+  name   = "core-sg-global"
+  vpc_id = aws_vpc.vpc.id
+  // Without dynamic blocks
+  # ingress {
+  #   description = "Port 443"
+  #   from_port   = 443
+  #   to_port     = 443
+  #   protocol    = "tcp"
+  #   cidr_blocks = ["0.0.0.0/0"]
+  # }
+  # ingress {
+  #   description = "Port 80"
+  #   from_port   = 80
+  #   to_port     = 80
+  #   protocol    = "tcp"
+  #   cidr_blocks = ["0.0.0.0/0"]
+  # }
+  // Dynamic blocks
+  // Loop through the ingress rules defined above and write only ONE configuration for ingress rules
+  dynamic "ingress" {
+    //for_each = local.ingress_rules
+    for_each = var.web_ingress
+    content {
+      description = ingress.value.description
+      from_port   = ingress.value.port
+      to_port     = ingress.value.port
+      # protocol    = "tcp"
+      # cidr_blocks = ["0.0.0.0/0"]
+      protocol    = ingress.value.protocol
+      cidr_blocks = ingress.value.cidr_blocks
+    }
+  }
+
+  // Use this lifecycle rule to break the aforementioned dependency
+  lifecycle {
+    create_before_destroy = true
+    //prevent_destroy       = true
+  }
 }

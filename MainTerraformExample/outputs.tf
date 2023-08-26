@@ -37,3 +37,12 @@ output "data-bucket-domain-name" {
 output "data-bucket-region" {
   value = "The ${data.aws_s3_bucket.data_bucket.id} bucket is located in ${data.aws_s3_bucket.data_bucket.region}"
 }
+
+// View outputs from Terraform in-build functions
+output "max_value" {
+  value = local.maximum
+}
+
+output "min_value" {
+  value = local.minimum
+}

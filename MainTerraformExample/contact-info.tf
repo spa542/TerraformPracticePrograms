@@ -35,7 +35,6 @@ output "last_name" {
   sensitive = true
 }
 
-// Testing
 // Must be marked as sensitive because the values themselves have been marked as sensitive up above
 output "phone_number" {
   value     = local.contact_info.phone_number

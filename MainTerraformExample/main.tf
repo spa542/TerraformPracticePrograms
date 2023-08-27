@@ -302,7 +302,7 @@ resource "local_file" "private_key_pem" {
 
 # Generate AWS Key Pair
 resource "aws_key_pair" "generated" {
-  key_name   = "MyAWSKey"
+  key_name   = "MyAWSKey-${var.environment}"
   public_key = tls_private_key.generated.public_key_openssh
 
   lifecycle {

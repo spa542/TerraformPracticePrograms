@@ -47,11 +47,11 @@ variable "variables_sub_auto_ip" {
   default     = true
 }
 
-variable "environment" {
-  description = "Environment for deployment"
-  type        = string
-  default     = "dev"
-}
+# variable "environment" {
+#   description = "Environment for deployment"
+#   type        = string
+#   default     = "dev"
+# }
 
 // List example
 variable "us-east-1-azs" {
@@ -132,4 +132,11 @@ variable "web_ingress" {
       cidr_blocks = ["0.0.0.0/0"]
     }
   }
+}
+
+// Will be auto populated in Terraform workspace as long there is a workspace environment variable present
+variable "environment" {
+  type        = string
+  description = "Infrastructure environment. eg. dev, prod, etc"
+  default     = "test"
 }

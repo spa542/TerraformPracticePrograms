@@ -16,5 +16,6 @@ module "vpc" {
     Name        = "VPC using new Remote Backend - VCS Example"
     Terraform   = "true"
     Environment = "dev"
+    Test        = "Test"
   }
 }

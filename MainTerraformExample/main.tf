@@ -71,6 +71,20 @@ locals {
 
 # Define the VPC
 resource "aws_vpc" "vpc" {
+  // For using east provider configuration
+  provider   = aws.east
+  cidr_block = var.vpc_cidr
+  tags = {
+    Name        = upper(var.vpc_name)
+    Environment = upper(var.environment)
+    Terraform   = upper("true")
+    Region      = data.aws_region.current.name
+  }
+}
+
+resource "aws_vpc" "vpc-west" {
+  // For DR, use the west configuration that is also defined in same terraform.tf file
+  provider   = aws.west
   cidr_block = var.vpc_cidr
   tags = {
     Name        = upper(var.vpc_name)

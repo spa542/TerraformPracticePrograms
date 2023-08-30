@@ -26,6 +26,22 @@ terraform {
 
 provider "aws" {
   region = "us-east-1"
+  // Giving an alias since we have multiple provider configurations
+  alias = "east"
+  default_tags {
+    tags = {
+      Environment = terraform.workspace
+      Owner       = "Ryan Rosiak"
+      Provisioned = "Terraform"
+    }
+  }
+}
+
+// For use cases where we want to have both east and west configurations present in the same file
+provider "aws" {
+  region = "us-west-2"
+  // Giving an alias since we have multiple provider configurations
+  alias = "west"
   default_tags {
     tags = {
       Environment = terraform.workspace
